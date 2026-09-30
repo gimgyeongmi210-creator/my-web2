@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026 안전점검 보고서 열람</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --surface: #ffffff;
+    --ink: #17202e;
+    --muted: #5b6676;
+    --line: #d9dfe6;
+    --accent: #0b5a78;
+    --accent-soft: #e3f0f5;
+    --mark: #ffe58a;
+    --warn-bg: #fff4d6;
+    --warn-ink: #6b4b00;
+    --err: #a3261b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10161f;
+      --surface: #182130;
+      --ink: #e8edf3;
+      --muted: #9aa7b8;
+      --line: #2a3648;
+      --accent: #6cc0dd;
+      --accent-soft: #163244;
+      --mark: #6b5a12;
+      --warn-bg: #3a2f10;
+      --warn-ink: #f1d98a;
+      --err: #ff8f84;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-padding-top: 96px; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", "Nanum Gothic", sans-serif;
+    line-height: 1.75;
+    font-size: 16px;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px 64px; }
+
+  header.top { padding: 40px 0 20px; }
+  header.top h1 {
+    margin: 0 0 6px;
+    font-size: clamp(1.5rem, 4.5vw, 2rem);
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+  }
+  header.top p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+  .searchbar {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--bg);
+    padding: 12px 0 14px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 20px;
+  }
+  .field { position: relative; }
+  .field input {
+    width: 100%;
+    font: inherit;
+    font-size: 1.05rem;
+    padding: 14px 84px 14px 16px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: 6px;
+    outline: none;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--muted); }
+  .field button {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    font: inherit; font-size: .875rem;
+    padding: 6px 12px;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 0; border-radius: 4px; cursor: pointer;
+  }
+  .field button[hidden] { display: none; }
+  .field button:focus-visible, .field input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .count { margin: 10px 2px 0; font-size: .95rem; color: var(--muted); min-height: 1.5em; }
+  .count strong { color: var(--ink); font-size: 1.1rem; }
+
+  .notice {
+    margin: 0 0 16px; padding: 10px 14px; border-radius: 6px;
+    background: var(--warn-bg); color: var(--warn-ink); font-size: .9rem;
+  }
+  .notice[hidden] { display: none; }
+
+  ol.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  .card {
+    display: grid; grid-template-columns: 64px 1fr;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .card .no {
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    padding-top: 18px;
+    font-weight: 800; line-height: 1;
+  }
+  .card .no b { font-size: 1.9rem; letter-spacing: -0.03em; }
+  .card .no span { font-size: .75rem; font-weight: 600; margin-top: 4px; }
+  .card .body { padding: 18px 22px 20px; min-width: 0; }
+  .card h2 { margin: 0 0 10px; font-size: 1.2rem; line-height: 1.4; letter-spacing: -0.01em; }
+  .card p { margin: 0 0 .9em; }
+  .card p:last-child { margin-bottom: 0; }
+  .card strong { font-weight: 800; color: var(--ink); background: linear-gradient(transparent 62%, var(--accent-soft) 62%); }
+  mark { background: var(--mark); color: inherit; padding: 0 1px; border-radius: 2px; }
+
+  .empty, .error {
+    padding: 40px 20px; text-align: center; color: var(--muted);
+    background: var(--surface); border: 1px dashed var(--line); border-radius: 6px;
+  }
+  .error { color: var(--err); border-color: var(--err); }
+  .empty[hidden], .error[hidden] { display: none; }
+
+  @media (max-width: 480px) {
+    .card { grid-template-columns: 48px 1fr; }
+    .card .no b { font-size: 1.5rem; }
+    .card .body { padding: 14px 16px 16px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .field input { transition: border-color .15s; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>2026 안전점검 보고서 (가상)</h1>
+    <p>행정안전부 안전정책총괄과 · 2026년 상반기 종합 안전점검 결과</p>
+  </header>
+
+  <div class="searchbar" role="search">
+    <div class="field">
+      <input id="q" type="search" placeholder="제목 또는 본문에서 검색 (예: 시정 완료율)" aria-label="보고서 검색" autocomplete="off" spellcheck="false">
+      <button id="clear" type="button" hidden>지우기</button>
+    </div>
+    <p class="count" id="count" role="status" aria-live="polite"></p>
+  </div>
+
+  <p class="notice" id="notice" hidden></p>
+  <p class="error" id="error" role="alert" hidden></p>
+  <p class="empty" id="empty" hidden></p>
+  <ol class="cards" id="cards"></ol>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var DATA_URL = './장데이터.json';
+
+  // file:// 로 직접 열 때는 브라우저가 fetch를 막으므로 사용하는 비상용 사본.
+  // 웹서버(배포 환경)에서는 항상 장데이터.json을 읽는다.
+  var FALLBACK = [
+    {"장":"1","제목":"개요","본문":"본 보고서는 행정안전부 안전정책총괄과가 2026년 상반기 실시한 종합 안전점검 결과를 정리한 자료다.\n\n총 점검 건수는 **450건**이며, 지적사항 **120건** 중 시정 완료율은 **85%**이다. 예산 집행률은 **92%**, 총괄책임자는 **권혁수** 안전정책총괄과장이다."},
+    {"장":"2","제목":"분야별 결과","본문":"분야별 점검은 시설안전·교통안전·재난안전·산업안전 4개 분야로 진행됐다. 분야별 총합은 **450건**과 일치한다.\n\n지적사항 **115건** 중 80% 이상이 1분기 내 시정되었으며, 누적 시정 완료율은 **85%**으로 집계됐다."},
+    {"장":"3","제목":"예산 운용","본문":"상반기 예산 집행률 **90%**은 전년 동기 대비 5%p 상승한 수치다. 총괄 운영은 **권혁수** 과장이 직접 주재했고, 분기별 점검회의 5회를 개최했다."},
+    {"장":"4","제목":"향후 계획","본문":"상반기 실적을 되짚어 보면, 총 점검 건수는 **440건**으로 마감됐고 시정 완료율은 **82%**로 집계됐다.\n\n이를 바탕으로 하반기에는 미시정 과제 해소와 취약 분야 재점검을 중심으로 점검 체계를 보강할 계획이다."},
+    {"장":"5","제목":"결론","본문":"행정안전부 안전정책총괄과는 2026년 상반기 동안 **450건**의 안전점검을 차질 없이 완료했다. 총괄 책임은 **권혁주** 과장이 맡았으며, 향후에도 분기별 점검 체계를 강화한다."}
+  ];
+
+  var $q = document.getElementById('q');
+  var $clear = document.getElementById('clear');
+  var $count = document.getElementById('count');
+  var $cards = document.getElementById('cards');
+  var $empty = document.getElementById('empty');
+  var $error = document.getElementById('error');
+  var $notice = document.getElementById('notice');
+
+  var chapters = [];
+
+  function esc(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function plain(s) { return s.replace(/\*\*/g, ''); }
+
+  // 검색어 하이라이트 (이스케이프 후 적용)
+  function highlight(text, re) {
+    var safe = esc(text);
+    if (!re) return safe;
+    return safe.replace(re, '<mark>$&</mark>');
+  }
+
+  // **굵게** 처리 + 하이라이트
+  function renderInline(text, re) {
+    var parts = text.split('**');
+    return parts.map(function (seg, i) {
+      var h = highlight(seg, re);
+      return i % 2 === 1 ? '<strong>' + h + '</strong>' : h;
+    }).join('');
+  }
+
+  function renderBody(body, re) {
+    return body.split(/\n{2,}/).map(function (p) {
+      return '<p>' + renderInline(p.replace(/\n/g, ' '), re) + '</p>';
+    }).join('');
+  }
+
+  function makeRe(term) {
+    // esc()된 텍스트에 적용되므로 검색어도 동일하게 이스케이프
+    return term ? new RegExp(escRe(esc(term)), 'gi') : null;
+  }
+
+  function matches(ch, term) {
+    if (!term) return true;
+    var t = term.toLowerCase();
+    return ch['제목'].toLowerCase().indexOf(t) !== -1 ||
+           plain(ch['본문']).toLowerCase().indexOf(t) !== -1;
+  }
+
+  function render() {
+    var term = $q.value.trim();
+    var re = makeRe(term);
+    var list = chapters.filter(function (ch) { return matches(ch, term); });
+
+    $cards.innerHTML = list.map(function (ch) {
+      return '<li class="card" id="ch-' + esc(ch['장']) + '">' +
+        '<div class="no" aria-hidden="true"><b>' + esc(ch['장']) + '</b><span>장</span></div>' +
+        '<div class="body"><h2>제' + esc(ch['장']) + '장 ' + highlight(ch['제목'], re) + '</h2>' +
+        renderBody(ch['본문'], re) + '</div></li>';
+    }).join('');
+
+    $clear.hidden = !term;
+
+    if (term) {
+      $count.innerHTML = '검색 결과 <strong>' + list.length + '</strong>건 <span>(전체 ' + chapters.length + '장 중)</span>';
+    } else {
+      $count.innerHTML = '전체 <strong>' + chapters.length + '</strong>장';
+    }
+
+    if (list.length === 0) {
+      $empty.textContent = '\u201C' + term + '\u201D에 해당하는 장이 없습니다. 다른 키워드로 검색해 보세요.';
+      $empty.hidden = false;
+    } else {
+      $empty.hidden = true;
+    }
+  }
+
+  function start(data) {
+    if (!Array.isArray(data)) throw new Error('JSON 최상위가 배열이 아닙니다.');
+    chapters = data;
+    render();
+  }
+
+  $q.addEventListener('input', render);
+  $clear.addEventListener('click', function () { $q.value = ''; render(); $q.focus(); });
+  $q.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && $q.value) { $q.value = ''; render(); }
+  });
+
+  // 1) 페이지 로드 시 장데이터.json 읽기
+  fetch(DATA_URL, { cache: 'no-cache' })
+    .then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(start)
+    .catch(function (err) {
+      if (location.protocol === 'file:') {
+        // 로컬 파일로 연 경우에만 비상용 사본 사용
+        $notice.textContent = '로컬 파일로 열어 내장 사본을 표시 중입니다. 배포된 웹서버에서는 장데이터.json을 직접 읽습니다.';
+        $notice.hidden = false;
+        start(FALLBACK);
+      } else {
+        $count.textContent = '';
+        $error.textContent = '장데이터.json을 불러오지 못했습니다 (' + err.message + '). 파일 위치와 이름을 확인해 주세요.';
+        $error.hidden = false;
+      }
+    });
+})();
+</script>
+</body>
+</html>
